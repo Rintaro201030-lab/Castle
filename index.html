@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>城郭記 - 50年プロトタイプ</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #game-container {
+            display: flex;
+            gap: 20px;
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        canvas {
+            border: 2px solid #555;
+            background-color: #3a5311; /* 草地の色 */
+            cursor: pointer;
+        }
+        #sidebar {
+            width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .panel {
+            background: #333;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #444;
+        }
+        h2, h3 { margin: 0 0 10px 0; color: #e6c687; }
+        .resource { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .btn-group { display: flex; flex-direction: column; gap: 8px; }
+        button {
+            padding: 8px 12px;
+            background: #4a6b22;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        button:hover { background: #5c852a; }
+        button.selected { background: #d97724; }
+        button:disabled { background: #555; color: #888; cursor: not-allowed; }
+        #log {
+            height: 120px;
+            overflow-y: auto;
+            font-size: 12px;
+            background: #111;
+            padding: 8px;
+            border-radius: 4px;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+<h1>『城郭記』 50年生存シミュレーション (プロトタイプ)</h1>
+
+<div id="game-container">
+    <canvas id="canvas" width="600" height="600"></canvas>
+
+    <div id="sidebar">
+        <!-- 進行・ステータス -->
+        <div class="panel">
+            <h2>領地状態</h2>
+            <div class="resource"><span>経過年数:</span><strong id="year-disp">1 年目 (春)</strong></div>
+            <div class="resource"><span>当主:</span><strong id="lord-disp">初代 当主 (建築の才)</strong></div>
+            <div class="resource"><span>金:</span><strong id="gold-disp">500</strong></div>
+            <div class="resource"><span>米 (年貢):</span><strong id="koku-disp">200</strong></div>
+            <div class="resource"><span>人口:</span><strong id="pop-disp">20</strong></div>
+            <div class="resource"><span>天守耐久:</span><strong id="hp-disp">100 / 100</strong></div>
+        </div>
+
+        <!-- 建築メニュー -->
+        <div class="panel">
+            <h3>建築・配置</h3>
+            <div class="btn-group">
+                <button id="btn-wall" onclick="selectBuild('wall')">石垣/柵 (金:20) [耐久・壁]</button>
+                <button id="btn-arrow" onclick="selectBuild('arrow')">弓矢倉 (金:50) [射程3/単体]</button>
+                <button id="btn-gun" onclick="selectBuild('gun')" disabled>鉄砲櫓 (金:150) [要:15年目/貫通]</button>
+                <button id="btn-oil" onclick="selectBuild('oil')">油壺の罠 (金:30) [範囲足止め]</button>
+                <button id="btn-farm" onclick="selectBuild('farm')">田畑 (金:40) [秋に米を生産]</button>
+            </div>
+        </div>
+
+        <!-- ターン進行 -->
+        <div class="panel">
+            <button onclick="nextSeason()" style="width: 100%; height: 40px; font-size: 16px; background: #c0392b;">次の季節へ進む</button>
+        </div>
+
+        <!-- ログ -->
+        <div class="panel">
+            <h3>歴史記録</h3>
+            <div id="log"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const GRID_SIZE = 15;
+const TILE_SIZE = 40;
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// ゲームの状態データ
+let state = {
+    year: 1,
+    seasonIndex: 0, // 0:春, 1:夏, 2:秋, 3:冬
+    seasons: ['春', '夏', '秋', '冬'],
+    gold: 500,
+    koku: 200,
+    pop: 20,
+    castleHp: 100,
+    maxCastleHp: 100,
+    lordGeneration: 1,
+    selectedBuilding: null,
+    
+    // グリッドマップ (0: 空き地)
+    grid: Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null)),
+    enemies: []
+};
+
+// 建築物のデータ定義
+const BUILDINGS = {
+    keep:  { name: '本丸・天守', color: '#e74c3c', hp: 100 },
+    wall:  { name: '石垣/柵',    color: '#7f8c8d', hp: 150, cost: 20 },
+    arrow: { name: '弓矢倉',    color: '#f39c12', hp: 50,  cost: 50, range: 3, atk: 15, isAoe: false },
+    gun:   { name: '鉄砲櫓',    color: '#2980b9', hp: 80,  cost: 150, range: 4, atk: 45, isAoe: false },
+    oil:   { name: '油壺の罠',  color: '#d35400', hp: 1,   cost: 30, range: 1.2, atk: 40, isAoe: true },
+    farm:  { name: '田畑',      color: '#2ecc71', hp: 20,  cost: 40 }
+};
+
+// 初期配置：中央に天守閣を配置
+const KEEP_POS = { x: 7, y: 7 };
+state.grid[KEEP_POS.y][KEEP_POS.x] = { type: 'keep', hp: BUILDINGS.keep.hp };
+
+// ログ出力
+function log(msg) {
+    const logDiv = document.getElementById('log');
+    logDiv.innerHTML = `> ${msg}<br>` + logDiv.innerHTML;
+}
+
+// 建築選択
+function selectBuild(type) {
+    state.selectedBuilding = type;
+    document.querySelectorAll('.btn-group button').forEach(b => b.classList.remove('selected'));
+    if (type) document.getElementById(`btn-${type}`).classList.add('selected');
+}
+
+// マスクリックで建築
+canvas.addEventListener('click', (e) => {
+    if (!state.selectedBuilding) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) / TILE_SIZE);
+    const y = Math.floor((e.clientY - rect.top) / TILE_SIZE);
+
+    if (state.grid[y][x] !== null) {
+        log('ここには既に建物があります。');
+        return;
+    }
+
+    const bInfo = BUILDINGS[state.selectedBuilding];
+    if (state.gold < bInfo.cost) {
+        log('金が足りません！');
+        return;
+    }
+
+    // 建築実行
+    state.gold -= bInfo.cost;
+    state.grid[y][x] = { type: state.selectedBuilding, hp: bInfo.hp };
+    log(`(${x}, ${y}) に【${bInfo.name}】を配置しました。`);
+    
+    updateUI();
+    draw();
+});
+
+// 季節の進行（メインループ）
+function nextSeason() {
+    state.seasonIndex++;
+    if (state.seasonIndex >= 4) {
+        state.seasonIndex = 0;
+        state.year++;
+        processYearlyEvents(); // 年経過処理
+    }
+
+    const seasonName = state.seasons[state.seasonIndex];
+    log(`--- ${state.year}年目 【${seasonName}】 ---`);
+
+    // 内政処理（秋に米、毎ターン金が入る）
+    processEconomy();
+
+    // 戦闘処理（合戦）
+    processCombat();
+
+    updateUI();
+    draw();
+
+    // 敗北チェック
+    if (state.castleHp <= 0) {
+        alert(`【落城】 ${state.year}年目、天守が落城しました... 50年の歴史は途絶えました。`);
+        location.reload();
+    }
+
+    // 50年クリアチェック
+    if (state.year > 50) {
+        alert(`【天下不落】 50年間、見事城を守り抜きました！不滅の大城郭として歴史に名を残します！`);
+        location.reload();
+    }
+}
+
+// 年間イベント・時代進化・世代交代
+function processYearlyEvents() {
+    // 時代進化アンロック
+    if (state.year === 15) {
+        document.getElementById('btn-gun').disabled = false;
+        log('【技術革新】 鉄砲が伝来！「鉄砲櫓」が建設可能になりました。');
+    }
+
+    // 世代交代（20年、40年目）
+    if (state.year === 20) {
+        state.lordGeneration = 2;
+        log('【世代交代】 二代目当主が就任。「内政の才」により収穫・税収が増加！');
+    } else if (state.year === 40) {
+        state.lordGeneration = 3;
+        log('【世代交代】 三代目当主が就任。「軍事の才」により天守耐久が自動回復！');
+        state.castleHp = Math.min(state.maxCastleHp, state.castleHp + 30);
+    }
+}
+
+// 内政処理
+function processEconomy() {
+    let farmCount = 0;
+    for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+            if (state.grid[y][x]?.type === 'farm') farmCount++;
+        }
+    }
+
+    // 税金獲得
+    const goldIncome = 30 + (state.pop * 2) + (state.lordGeneration === 2 ? 30 : 0);
+    state.gold += goldIncome;
+
+    // 秋の収穫
+    if (state.seasonIndex === 2) {
+        const kokuIncome = farmCount * 50;
+        state.koku += kokuIncome;
+        state.pop += Math.floor(farmCount * 1.5); // 田畑により人口も増加
+        log(`秋の収穫！ 米+${kokuIncome}、人口が ${state.pop} 人に増えました。`);
+    }
+}
+
+// 戦闘処理（キルゾーン・範囲攻撃ロジック）
+function processCombat() {
+    // 秋・冬に敵が発生しやすい
+    if (state.seasonIndex === 2 || state.seasonIndex === 3) {
+        spawnEnemies();
+    }
+
+    if (state.enemies.length === 0) return;
+
+    log(`敵軍が接近中！ (規模: ${state.enemies.length}体)`);
+
+    // 防衛施設の自動攻撃
+    for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+            const cell = state.grid[y][x];
+            if (!cell) continue;
+
+            const bInfo = BUILDINGS[cell.type];
+            if (bInfo && bInfo.atk) {
+                // 範囲内の敵を探す
+                let targets = state.enemies.filter(e => {
+                    const dist = Math.hypot(e.x - x, e.y - y);
+                    return dist <= bInfo.range;
+                });
+
+                if (targets.length > 0) {
+                    if (bInfo.isAoe) {
+                        // 範囲攻撃（油壺など）
+                        targets.forEach(e => e.hp -= bInfo.atk);
+                        log(`【${bInfo.name}】が作動！ 範囲内の敵にダメージ。`);
+                        state.grid[y][x] = null; // 使い捨て罠の消失
+                    } else {
+                        // 単体攻撃
+                        targets[0].hp -= bInfo.atk;
+                    }
+                }
+            }
+        }
+    }
+
+    // 敵の移動と天守攻撃
+    state.enemies.forEach(e => {
+        if (e.hp <= 0) return;
+
+        // 本丸を目指して直進移動
+        if (e.x < KEEP_POS.x) e.x += 0.5;
+        if (e.x > KEEP_POS.x) e.x -= 0.5;
+        if (e.y < KEEP_POS.y) e.y += 0.5;
+        if (e.y > KEEP_POS.y) e.y -= 0.5;
+
+        // 本丸に到達したら攻撃
+        if (Math.abs(e.x - KEEP_POS.x) < 0.8 && Math.abs(e.y - KEEP_POS.y) < 0.8) {
+            state.castleHp -= e.atk;
+            log(`敵が本丸を攻撃！ 天守耐久: -${e.atk}`);
+        }
+    });
+
+    // 倒れた敵の除去
+    state.enemies = state.enemies.filter(e => e.hp > 0);
+}
+
+// 敵の生成（年数に応じて強化）
+function spawnEnemies() {
+    const count = 2 + Math.floor(state.year / 5);
+    const enemyHp = 30 + (state.year * 4);
+    
+    for (let i = 0; i < count; i++) {
+        // マップの外枠からランダム発生
+        const isHorizontal = Math.random() < 0.5;
+        let ex = isHorizontal ? (Math.random() < 0.5 ? 0 : GRID_SIZE - 1) : Math.floor(Math.random() * GRID_SIZE);
+        let ey = !isHorizontal ? (Math.random() < 0.5 ? 0 : GRID_SIZE - 1) : Math.floor(Math.random() * GRID_SIZE);
+
+        state.enemies.push({ x: ex, y: ey, hp: enemyHp, atk: 15 });
+    }
+}
+
+// UIの更新
+function updateUI() {
+    const lordTitles = ['', '初代 (建築の才)', '二代目 (内政の才)', '三代目 (軍事の才)'];
+    document.getElementById('year-disp').innerText = `${state.year} 年目 (${state.seasons[state.seasonIndex]})`;
+    document.getElementById('lord-disp').innerText = lordTitles[state.lordGeneration];
+    document.getElementById('gold-disp').innerText = state.gold;
+    document.getElementById('koku-disp').innerText = state.koku;
+    document.getElementById('pop-disp').innerText = state.pop;
+    document.getElementById('hp-disp').innerText = `${Math.max(0, state.castleHp)} / ${state.maxCastleHp}`;
+}
+
+// 描画処理
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // グリッド線と建物の描画
+    for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+            ctx.strokeStyle = '#4d6e19';
+            ctx.strokeRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+
+            const cell = state.grid[y][x];
+            if (cell) {
+                ctx.fillStyle = BUILDINGS[cell.type].color;
+                ctx.fillRect(x * TILE_SIZE + 2, y * TILE_SIZE + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+            }
+        }
+    }
+
+    // 敵ユニットの描画（赤い丸）
+    state.enemies.forEach(e => {
+        ctx.fillStyle = '#9b59b6';
+        ctx.beginPath();
+        ctx.arc(e.x * TILE_SIZE + TILE_SIZE/2, e.y * TILE_SIZE + TILE_SIZE/2, 10, 0, Math.PI * 2);
+        ctx.fill();
+    });
+}
+
+// 初期化実行
+updateUI();
+draw();
+log('葵城へようこそ。50年間の防衛戦が始まります。');
+</script>
+
+</body>
+</html>
