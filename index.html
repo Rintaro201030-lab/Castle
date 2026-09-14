@@ -2,109 +2,145 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>城郭記 - 50年プロトタイプ</title>
+    <title>日本国全図 - 50年城郭生存記</title>
     <style>
         body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            background-color: #1a1a1a;
-            color: #fff;
+            font-family: 'Yu Mincho', 'YuMincho', 'Hiragino Mincho ProN', serif;
+            background-color: #0f0d0a;
+            color: #e8e3d5;
             margin: 0;
             padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
+        #title-container {
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #b8860b;
+            padding-bottom: 8px;
+            width: 100%;
+            max-width: 980px;
+        }
+        h1 {
+            margin: 0;
+            color: #d4af37;
+            font-size: 26px;
+            letter-spacing: 4px;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+        }
         #game-container {
             display: flex;
             gap: 20px;
-            background: #2a2a2a;
+            background: #1c1813;
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            border-radius: 6px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            border: 2px solid #3d3223;
         }
         canvas {
-            border: 2px solid #555;
-            background-color: #3a5311; /* 草地の色 */
+            border: 3px solid #5a4833;
+            border-radius: 4px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.7);
             cursor: pointer;
         }
         #sidebar {
-            width: 320px;
+            width: 330px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
         }
         .panel {
-            background: #333;
+            background: #252019;
             padding: 12px;
-            border-radius: 6px;
-            border: 1px solid #444;
+            border-radius: 4px;
+            border: 1px solid #423728;
         }
-        h2, h3 { margin: 0 0 10px 0; color: #e6c687; }
-        .resource { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .btn-group { display: flex; flex-direction: column; gap: 8px; }
+        h2, h3 {
+            margin: 0 0 8px 0;
+            color: #d4af37;
+            border-bottom: 1px solid #423728;
+            padding-bottom: 4px;
+            font-size: 15px;
+            letter-spacing: 1px;
+        }
+        .resource { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
+        .btn-group { display: flex; flex-direction: column; gap: 6px; }
         button {
-            padding: 8px 12px;
-            background: #4a6b22;
-            color: white;
-            border: none;
+            padding: 8px 10px;
+            background: linear-gradient(180deg, #3d3121, #282015);
+            color: #e8e3d5;
+            border: 1px solid #635037;
             border-radius: 4px;
             cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
             font-weight: bold;
-            transition: 0.2s;
+            text-align: left;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
         }
-        button:hover { background: #5c852a; }
-        button.selected { background: #d97724; }
-        button:disabled { background: #555; color: #888; cursor: not-allowed; }
+        button:hover { background: linear-gradient(180deg, #54442e, #3d3121); border-color: #b8860b; }
+        button.selected { background: linear-gradient(180deg, #8b4513, #5c2e0b); border-color: #d4af37; color: #fff; }
+        button:disabled { background: #1a1611; color: #554d42; border-color: #2b241c; cursor: not-allowed; }
         #log {
             height: 120px;
             overflow-y: auto;
-            font-size: 12px;
-            background: #111;
+            font-size: 11px;
+            background: #100e0b;
             padding: 8px;
-            border-radius: 4px;
-            color: #aaa;
+            border-radius: 3px;
+            color: #b3a998;
+            line-height: 1.5;
+            border: 1px solid #2b241c;
         }
     </style>
 </head>
 <body>
 
-<h1>『城郭記』 50年生存シミュレーション (プロトタイプ)</h1>
+<div id="title-container">
+    <h1>大日本国全図 - 葵城五十年戦国絵巻</h1>
+</div>
 
 <div id="game-container">
     <canvas id="canvas" width="600" height="600"></canvas>
 
     <div id="sidebar">
-        <!-- 進行・ステータス -->
+        <!-- 領地ステータス -->
         <div class="panel">
-            <h2>領地状態</h2>
-            <div class="resource"><span>経過年数:</span><strong id="year-disp">1 年目 (春)</strong></div>
-            <div class="resource"><span>当主:</span><strong id="lord-disp">初代 当主 (建築の才)</strong></div>
-            <div class="resource"><span>金:</span><strong id="gold-disp">500</strong></div>
-            <div class="resource"><span>米 (年貢):</span><strong id="koku-disp">200</strong></div>
-            <div class="resource"><span>人口:</span><strong id="pop-disp">20</strong></div>
-            <div class="resource"><span>天守耐久:</span><strong id="hp-disp">100 / 100</strong></div>
+            <h2>【領国目録】</h2>
+            <div class="resource"><span>年代:</span><strong id="year-disp" style="color:#d4af37;">1 年目 (春)</strong></div>
+            <div class="resource"><span>当主:</span><strong id="lord-disp">初代 (築城の名手)</strong></div>
+            <div class="resource"><span>軍資金:</span><strong id="gold-disp" style="color:#ffd700;">500 貫</strong></div>
+            <div class="resource"><span>兵糧高:</span><strong id="koku-disp" style="color:#2ecc71;">200 石</strong></div>
+            <div class="resource"><span>領内人口:</span><strong id="pop-disp">25 人</strong></div>
+            <div class="resource"><span>天守耐久:</span><strong id="hp-disp" style="color:#e74c3c;">100 / 100</strong></div>
         </div>
 
-        <!-- 建築メニュー -->
+        <!-- 建築パネル -->
         <div class="panel">
-            <h3>建築・配置</h3>
+            <h3>【防衛・城郭普請】</h3>
             <div class="btn-group">
-                <button id="btn-wall" onclick="selectBuild('wall')">石垣/柵 (金:20) [耐久・壁]</button>
-                <button id="btn-arrow" onclick="selectBuild('arrow')">弓矢倉 (金:50) [射程3/単体]</button>
-                <button id="btn-gun" onclick="selectBuild('gun')" disabled>鉄砲櫓 (金:150) [要:15年目/貫通]</button>
-                <button id="btn-oil" onclick="selectBuild('oil')">油壺の罠 (金:30) [範囲足止め]</button>
-                <button id="btn-farm" onclick="selectBuild('farm')">田畑 (金:40) [秋に米を生産]</button>
+                <button id="btn-wall" onclick="selectBuild('wall')"><span>高石垣（防壁）</span><span>20貫</span></button>
+                <button id="btn-moat" onclick="selectBuild('moat')"><span>水堀掘削（足止め）</span><span>35貫</span></button>
+                <button id="btn-arrow" onclick="selectBuild('arrow')"><span>弓矢倉（射程3）</span><span>50貫</span></button>
+                <button id="btn-gun" onclick="selectBuild('gun')" disabled><span>鉄砲櫓（要15年）</span><span>150貫</span></button>
+                <button id="btn-cannon" onclick="selectBuild('cannon')" disabled><span>大筒櫓（要31年/爆発）</span><span>300貫</span></button>
+                <button id="btn-farm" onclick="selectBuild('farm')"><span>新田開発（秋収穫）</span><span>40貫</span></button>
             </div>
         </div>
 
         <!-- ターン進行 -->
         <div class="panel">
-            <button onclick="nextSeason()" style="width: 100%; height: 40px; font-size: 16px; background: #c0392b;">次の季節へ進む</button>
+            <button onclick="nextSeason()" style="width:100%; height:42px; font-size:14px; text-align:center; justify-content:center; background:linear-gradient(180deg, #8b0000, #5c0000); border-color:#a52a2a;">
+                時を進める（次の季節へ）
+            </button>
         </div>
 
-        <!-- ログ -->
+        <!-- 年代記 -->
         <div class="panel">
-            <h3>歴史記録</h3>
+            <h3>【年代記】</h3>
             <div id="log"></div>
         </div>
     </div>
@@ -116,52 +152,65 @@ const TILE_SIZE = 40;
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-// ゲームの状態データ
+// 地形定義 (0:関東・中部平野, 1:山脈/山地, 2:太平洋・大河, 3:海沿い・砂浜)
+const MAP_TERRAIN = [
+    [2, 2, 2, 2, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1],
+    [2, 2, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+    [2, 1, 1, 1, 0, 0, 0, 2, 2, 2, 0, 0, 0, 1, 1],
+    [1, 1, 0, 0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 2, 2, 0, 0, 2, 2, 0, 0, 0, 0],
+    [1, 0, 0, 0, 2, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0],
+    [0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0],
+    [0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0], // 中央 (7,7) 本丸（要衝の城郭）
+    [0, 0, 0, 0, 2, 2, 0, 0, 0, 2, 2, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 0, 1],
+    [1, 1, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 1, 1],
+    [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+    [2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2],
+    [2, 2, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2],
+    [2, 2, 2, 2, 1, 1, 0, 0, 0, 1, 1, 2, 2, 2, 2]
+];
+
 let state = {
     year: 1,
-    seasonIndex: 0, // 0:春, 1:夏, 2:秋, 3:冬
+    seasonIndex: 0,
     seasons: ['春', '夏', '秋', '冬'],
     gold: 500,
     koku: 200,
-    pop: 20,
+    pop: 25,
     castleHp: 100,
     maxCastleHp: 100,
     lordGeneration: 1,
     selectedBuilding: null,
-    
-    // グリッドマップ (0: 空き地)
     grid: Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null)),
-    enemies: []
+    enemies: [],
+    effects: []
 };
 
-// 建築物のデータ定義
 const BUILDINGS = {
-    keep:  { name: '本丸・天守', color: '#e74c3c', hp: 100 },
-    wall:  { name: '石垣/柵',    color: '#7f8c8d', hp: 150, cost: 20 },
-    arrow: { name: '弓矢倉',    color: '#f39c12', hp: 50,  cost: 50, range: 3, atk: 15, isAoe: false },
-    gun:   { name: '鉄砲櫓',    color: '#2980b9', hp: 80,  cost: 150, range: 4, atk: 45, isAoe: false },
-    oil:   { name: '油壺の罠',  color: '#d35400', hp: 1,   cost: 30, range: 1.2, atk: 40, isAoe: true },
-    farm:  { name: '田畑',      color: '#2ecc71', hp: 20,  cost: 40 }
+    keep:   { name: '天守閣', hp: 100 },
+    wall:   { name: '高石垣', cost: 20, hp: 180 },
+    moat:   { name: '水堀', cost: 35, hp: 999 },
+    arrow:  { name: '弓矢倉', cost: 50, hp: 60, range: 3, atk: 18 },
+    gun:    { name: '鉄砲櫓', cost: 150, hp: 90, range: 4, atk: 50 },
+    cannon: { name: '大筒櫓', cost: 300, hp: 120, range: 6, atk: 90, isAoe: true },
+    farm:   { name: '新田', cost: 40, hp: 25 }
 };
 
-// 初期配置：中央に天守閣を配置
 const KEEP_POS = { x: 7, y: 7 };
 state.grid[KEEP_POS.y][KEEP_POS.x] = { type: 'keep', hp: BUILDINGS.keep.hp };
 
-// ログ出力
 function log(msg) {
     const logDiv = document.getElementById('log');
-    logDiv.innerHTML = `> ${msg}<br>` + logDiv.innerHTML;
+    logDiv.innerHTML = `<div>・${msg}</div>` + logDiv.innerHTML;
 }
 
-// 建築選択
 function selectBuild(type) {
     state.selectedBuilding = type;
     document.querySelectorAll('.btn-group button').forEach(b => b.classList.remove('selected'));
     if (type) document.getElementById(`btn-${type}`).classList.add('selected');
 }
 
-// マスクリックで建築
 canvas.addEventListener('click', (e) => {
     if (!state.selectedBuilding) return;
 
@@ -169,80 +218,66 @@ canvas.addEventListener('click', (e) => {
     const x = Math.floor((e.clientX - rect.left) / TILE_SIZE);
     const y = Math.floor((e.clientY - rect.top) / TILE_SIZE);
 
-    if (state.grid[y][x] !== null) {
-        log('ここには既に建物があります。');
-        return;
-    }
+    if (MAP_TERRAIN[y][x] === 1) { log('峻烈なる山地には築城できません。'); return; }
+    if (MAP_TERRAIN[y][x] === 2) { log('海・大河には直接配置できません。'); return; }
+    if (state.grid[y][x] !== null) { log('指定の場所には既に構造物があります。'); return; }
 
     const bInfo = BUILDINGS[state.selectedBuilding];
-    if (state.gold < bInfo.cost) {
-        log('金が足りません！');
-        return;
-    }
+    if (state.gold < bInfo.cost) { log('軍資金が不足しております。'); return; }
 
-    // 建築実行
     state.gold -= bInfo.cost;
     state.grid[y][x] = { type: state.selectedBuilding, hp: bInfo.hp };
-    log(`(${x}, ${y}) に【${bInfo.name}】を配置しました。`);
+    log(`(${x}, ${y}) に【${bInfo.name}】を完工。`);
     
     updateUI();
     draw();
 });
 
-// 季節の進行（メインループ）
 function nextSeason() {
     state.seasonIndex++;
     if (state.seasonIndex >= 4) {
         state.seasonIndex = 0;
         state.year++;
-        processYearlyEvents(); // 年経過処理
+        processYearlyEvents();
     }
 
-    const seasonName = state.seasons[state.seasonIndex];
-    log(`--- ${state.year}年目 【${seasonName}】 ---`);
+    log(`--- ${state.year}年目 【${state.seasons[state.seasonIndex]}】 ---`);
 
-    // 内政処理（秋に米、毎ターン金が入る）
     processEconomy();
-
-    // 戦闘処理（合戦）
     processCombat();
 
     updateUI();
     draw();
 
-    // 敗北チェック
     if (state.castleHp <= 0) {
-        alert(`【落城】 ${state.year}年目、天守が落城しました... 50年の歴史は途絶えました。`);
+        alert(`【落城】 ${state.year}年目、城郭は包囲され葵の家紋は潰えました...`);
         location.reload();
     }
-
-    // 50年クリアチェック
     if (state.year > 50) {
-        alert(`【天下不落】 50年間、見事城を守り抜きました！不滅の大城郭として歴史に名を残します！`);
+        alert(`【天下不落】 50年間の乱世を耐え抜き、日ノ本一の名城として歴史に刻まれました！`);
         location.reload();
     }
 }
 
-// 年間イベント・時代進化・世代交代
 function processYearlyEvents() {
-    // 時代進化アンロック
     if (state.year === 15) {
         document.getElementById('btn-gun').disabled = false;
-        log('【技術革新】 鉄砲が伝来！「鉄砲櫓」が建設可能になりました。');
+        log('【兵器革新】 種子島より鉄砲伝来。「鉄砲櫓」が解放。');
     }
-
-    // 世代交代（20年、40年目）
+    if (state.year === 31) {
+        document.getElementById('btn-cannon').disabled = false;
+        log('【重砲導入】 大筒の製造技術を獲得。「大筒櫓」が解放。');
+    }
     if (state.year === 20) {
         state.lordGeneration = 2;
-        log('【世代交代】 二代目当主が就任。「内政の才」により収穫・税収が増加！');
+        log('【当主継承】 二代目当主へ。内政巧者により年貢収穫が増加。');
     } else if (state.year === 40) {
         state.lordGeneration = 3;
-        log('【世代交代】 三代目当主が就任。「軍事の才」により天守耐久が自動回復！');
-        state.castleHp = Math.min(state.maxCastleHp, state.castleHp + 30);
+        log('【当主継承】 三代目当主へ。堅牢な統率力により天守の修理が進む。');
+        state.castleHp = Math.min(state.maxCastleHp, state.castleHp + 40);
     }
 }
 
-// 内政処理
 function processEconomy() {
     let farmCount = 0;
     for (let y = 0; y < GRID_SIZE; y++) {
@@ -251,137 +286,254 @@ function processEconomy() {
         }
     }
 
-    // 税金獲得
-    const goldIncome = 30 + (state.pop * 2) + (state.lordGeneration === 2 ? 30 : 0);
+    const goldIncome = 40 + (state.pop * 2) + (state.lordGeneration === 2 ? 40 : 0);
     state.gold += goldIncome;
 
-    // 秋の収穫
     if (state.seasonIndex === 2) {
-        const kokuIncome = farmCount * 50;
+        const kokuIncome = farmCount * 60;
         state.koku += kokuIncome;
-        state.pop += Math.floor(farmCount * 1.5); // 田畑により人口も増加
-        log(`秋の収穫！ 米+${kokuIncome}、人口が ${state.pop} 人に増えました。`);
+        state.pop += Math.floor(farmCount * 2);
+        log(`【秋の実り】 兵糧 +${kokuIncome}石。領民が ${state.pop}人 に発展。`);
     }
 }
 
-// 戦闘処理（キルゾーン・範囲攻撃ロジック）
 function processCombat() {
-    // 秋・冬に敵が発生しやすい
-    if (state.seasonIndex === 2 || state.seasonIndex === 3) {
-        spawnEnemies();
-    }
-
+    if (state.seasonIndex === 2 || state.seasonIndex === 3) spawnEnemies();
     if (state.enemies.length === 0) return;
 
-    log(`敵軍が接近中！ (規模: ${state.enemies.length}体)`);
+    log(`敵軍襲来！ (勢力規模: ${state.enemies.length}隊)`);
 
-    // 防衛施設の自動攻撃
+    // 防衛側の攻撃
     for (let y = 0; y < GRID_SIZE; y++) {
         for (let x = 0; x < GRID_SIZE; x++) {
             const cell = state.grid[y][x];
             if (!cell) continue;
-
             const bInfo = BUILDINGS[cell.type];
-            if (bInfo && bInfo.atk) {
-                // 範囲内の敵を探す
-                let targets = state.enemies.filter(e => {
-                    const dist = Math.hypot(e.x - x, e.y - y);
-                    return dist <= bInfo.range;
-                });
 
+            if (bInfo && bInfo.atk) {
+                let targets = state.enemies.filter(e => Math.hypot(e.x - x, e.y - y) <= bInfo.range);
                 if (targets.length > 0) {
                     if (bInfo.isAoe) {
-                        // 範囲攻撃（油壺など）
-                        targets.forEach(e => e.hp -= bInfo.atk);
-                        log(`【${bInfo.name}】が作動！ 範囲内の敵にダメージ。`);
-                        state.grid[y][x] = null; // 使い捨て罠の消失
+                        const target = targets[0];
+                        state.enemies.forEach(e => {
+                            if (Math.hypot(e.x - target.x, e.y - target.y) <= 1.8) {
+                                e.hp -= bInfo.atk;
+                            }
+                        });
+                        log(`【${bInfo.name}】放破！ 敵陣へ広範囲攻撃。`);
+                        state.effects.push({ sx: x, sy: y, tx: target.x, ty: target.y, type: cell.type });
                     } else {
-                        // 単体攻撃
                         targets[0].hp -= bInfo.atk;
+                        state.effects.push({ sx: x, sy: y, tx: targets[0].x, ty: targets[0].y, type: cell.type });
                     }
                 }
             }
         }
     }
 
-    // 敵の移動と天守攻撃
+    // 敵進撃処理
     state.enemies.forEach(e => {
         if (e.hp <= 0) return;
+        
+        let speed = 0.5;
+        const cx = Math.floor(e.x);
+        const cy = Math.floor(e.y);
+        
+        if (MAP_TERRAIN[cy] && MAP_TERRAIN[cy][cx] === 2) speed = 0.2; // 水上
+        if (state.grid[cy] && state.grid[cy][cx]?.type === 'moat') speed = 0.12; // 水堀（著しい足止め）
 
-        // 本丸を目指して直進移動
-        if (e.x < KEEP_POS.x) e.x += 0.5;
-        if (e.x > KEEP_POS.x) e.x -= 0.5;
-        if (e.y < KEEP_POS.y) e.y += 0.5;
-        if (e.y > KEEP_POS.y) e.y -= 0.5;
+        if (e.isCannonUnit) {
+            const dist = Math.hypot(e.x - KEEP_POS.x, e.y - KEEP_POS.y);
+            if (dist <= 5.0) {
+                state.castleHp -= e.atk;
+                log(`【敵・大筒隊】長距離砲撃！ 天守耐久 -${e.atk}`);
+                state.effects.push({ sx: e.x, sy: e.y, tx: KEEP_POS.x, ty: KEEP_POS.y, type: 'enemy_cannon' });
+                return;
+            }
+        }
 
-        // 本丸に到達したら攻撃
+        if (e.x < KEEP_POS.x) e.x += speed;
+        if (e.x > KEEP_POS.x) e.x -= speed;
+        if (e.y < KEEP_POS.y) e.y -= speed;
+        if (e.y > KEEP_POS.y) e.y += speed;
+
         if (Math.abs(e.x - KEEP_POS.x) < 0.8 && Math.abs(e.y - KEEP_POS.y) < 0.8) {
             state.castleHp -= e.atk;
-            log(`敵が本丸を攻撃！ 天守耐久: -${e.atk}`);
+            log(`敵部隊が本丸を強襲！ 天守耐久 -${e.atk}`);
         }
     });
 
-    // 倒れた敵の除去
     state.enemies = state.enemies.filter(e => e.hp > 0);
 }
 
-// 敵の生成（年数に応じて強化）
 function spawnEnemies() {
-    const count = 2 + Math.floor(state.year / 5);
-    const enemyHp = 30 + (state.year * 4);
+    const count = 3 + Math.floor(state.year / 4);
+    const enemyHp = 35 + (state.year * 5);
     
     for (let i = 0; i < count; i++) {
-        // マップの外枠からランダム発生
-        const isHorizontal = Math.random() < 0.5;
-        let ex = isHorizontal ? (Math.random() < 0.5 ? 0 : GRID_SIZE - 1) : Math.floor(Math.random() * GRID_SIZE);
-        let ey = !isHorizontal ? (Math.random() < 0.5 ? 0 : GRID_SIZE - 1) : Math.floor(Math.random() * GRID_SIZE);
+        let ex, ey;
+        do {
+            const isHorizontal = Math.random() < 0.5;
+            ex = isHorizontal ? (Math.random() < 0.5 ? 0 : GRID_SIZE - 1) : Math.floor(Math.random() * GRID_SIZE);
+            ey = !isHorizontal ? (Math.random() < 0.5 ? 0 : GRID_SIZE - 1) : Math.floor(Math.random() * GRID_SIZE);
+        } while (MAP_TERRAIN[ey][ex] === 1);
 
-        state.enemies.push({ x: ex, y: ey, hp: enemyHp, atk: 15 });
+        const isCannon = (state.year >= 35 && Math.random() < 0.35);
+        state.enemies.push({
+            x: ex,
+            y: ey,
+            hp: isCannon ? enemyHp * 1.4 : enemyHp,
+            maxHp: isCannon ? enemyHp * 1.4 : enemyHp,
+            atk: isCannon ? 25 : 12,
+            isCannonUnit: isCannon
+        });
     }
 }
 
-// UIの更新
 function updateUI() {
-    const lordTitles = ['', '初代 (建築の才)', '二代目 (内政の才)', '三代目 (軍事の才)'];
+    const lordTitles = ['', '初代 (築城名手)', '二代目 (内政巧者)', '三代目 (名将)'];
     document.getElementById('year-disp').innerText = `${state.year} 年目 (${state.seasons[state.seasonIndex]})`;
     document.getElementById('lord-disp').innerText = lordTitles[state.lordGeneration];
-    document.getElementById('gold-disp').innerText = state.gold;
-    document.getElementById('koku-disp').innerText = state.koku;
-    document.getElementById('pop-disp').innerText = state.pop;
+    document.getElementById('gold-disp').innerText = `${state.gold} 貫`;
+    document.getElementById('koku-disp').innerText = `${state.koku} 石`;
+    document.getElementById('pop-disp').innerText = `${state.pop} 人`;
     document.getElementById('hp-disp').innerText = `${Math.max(0, state.castleHp)} / ${state.maxCastleHp}`;
 }
 
-// 描画処理
+// リアルグラフィック描画
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // グリッド線と建物の描画
+    // 季節に応じた背景の色彩トーン
+    const seasonColors = ['#435c22', '#36521a', '#695123', '#4d5248'];
+    const currentBaseColor = seasonColors[state.seasonIndex];
+
+    // 1. 地形描画（立体的な山地・海・平野）
     for (let y = 0; y < GRID_SIZE; y++) {
         for (let x = 0; x < GRID_SIZE; x++) {
-            ctx.strokeStyle = '#4d6e19';
-            ctx.strokeRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            const terrain = MAP_TERRAIN[y][x];
+            const px = x * TILE_SIZE;
+            const py = y * TILE_SIZE;
 
+            if (terrain === 0) { // 平野（季節で色変化）
+                ctx.fillStyle = currentBaseColor;
+                ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+            } else if (terrain === 1) { // 標高感のある山脈
+                ctx.fillStyle = '#483c32';
+                ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                // 立体山影
+                ctx.fillStyle = '#2d251e';
+                ctx.beginPath();
+                ctx.moveTo(px + TILE_SIZE/2, py + 3);
+                ctx.lineTo(px + TILE_SIZE - 2, py + TILE_SIZE - 2);
+                ctx.lineTo(px + 2, py + TILE_SIZE - 2);
+                ctx.fill();
+            } else if (terrain === 2) { // 太平洋・日本海・大河
+                ctx.fillStyle = '#1e4863';
+                ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+                ctx.fillStyle = '#2b5e80';
+                ctx.fillRect(px + (x*7)%18, py + 12, 14, 2);
+            }
+
+            ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+            ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
+        }
+    }
+
+    // 2. 構造物描画（日本城郭のデザイン強化）
+    for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
             const cell = state.grid[y][x];
-            if (cell) {
-                ctx.fillStyle = BUILDINGS[cell.type].color;
-                ctx.fillRect(x * TILE_SIZE + 2, y * TILE_SIZE + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+            if (!cell) continue;
+
+            const px = x * TILE_SIZE;
+            const py = y * TILE_SIZE;
+
+            if (cell.type === 'keep') { // 和風天守閣（白壁・黒瓦・金の金の鯱）
+                ctx.fillStyle = '#222';
+                ctx.fillRect(px+4, py+4, 32, 32);
+                ctx.fillStyle = '#f0f0f0';
+                ctx.fillRect(px+8, py+10, 24, 20);
+                ctx.fillStyle = '#1a1a1a'; // 瓦屋根
+                ctx.fillRect(px+6, py+8, 28, 4);
+                ctx.fillRect(px+10, py+18, 20, 3);
+                ctx.fillStyle = '#ffd700'; // 鯱
+                ctx.fillRect(px+7, py+5, 4, 3);
+                ctx.fillRect(px+29, py+5, 4, 3);
+            } else if (cell.type === 'moat') { // 水堀
+                ctx.fillStyle = '#164e63';
+                ctx.fillRect(px+1, py+1, 38, 38);
+                ctx.fillStyle = '#22d3ee';
+                ctx.fillRect(px+6, py+12, 10, 2);
+            } else if (cell.type === 'wall') { // 高石垣
+                ctx.fillStyle = '#6b7280';
+                ctx.fillRect(px+3, py+3, 34, 34);
+                ctx.strokeStyle = '#374151';
+                ctx.strokeRect(px+6, py+6, 28, 28);
+            } else if (cell.type === 'arrow') { // 弓矢倉
+                ctx.fillStyle = '#b45309';
+                ctx.fillRect(px+6, py+6, 28, 28);
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(px+10, py+10, 20, 14);
+            } else if (cell.type === 'gun') { // 鉄砲櫓
+                ctx.fillStyle = '#1f2937';
+                ctx.fillRect(px+5, py+5, 30, 30);
+                ctx.fillStyle = '#d1d5db';
+                ctx.fillRect(px+8, py+18, 24, 4);
+            } else if (cell.type === 'cannon') { // 大筒櫓
+                ctx.fillStyle = '#111827';
+                ctx.fillRect(px+4, py+4, 32, 32);
+                ctx.fillStyle = '#fbbf24';
+                ctx.fillRect(px+6, py+15, 28, 8);
+            } else if (cell.type === 'farm') { // 新田
+                ctx.fillStyle = '#15803d';
+                ctx.fillRect(px+4, py+4, 32, 32);
             }
         }
     }
 
-    // 敵ユニットの描画（赤い丸）
+    // 3. 敵ユニット（甲冑・陣笠）
     state.enemies.forEach(e => {
-        ctx.fillStyle = '#9b59b6';
+        const px = e.x * TILE_SIZE + TILE_SIZE/2;
+        const py = e.y * TILE_SIZE + TILE_SIZE/2;
+
+        ctx.fillStyle = e.isCannonUnit ? '#6b21a8' : '#991b1b';
         ctx.beginPath();
-        ctx.arc(e.x * TILE_SIZE + TILE_SIZE/2, e.y * TILE_SIZE + TILE_SIZE/2, 10, 0, Math.PI * 2);
+        ctx.arc(px, py, e.isCannonUnit ? 13 : 10, 0, Math.PI * 2);
         ctx.fill();
+
+        // HPゲージ
+        const hpRate = Math.max(0, e.hp / e.maxHp);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(px - 14, py - 16, 28, 4);
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(px - 13, py - 15, 26 * hpRate, 2);
     });
+
+    // 4. 弾道エフェクト
+    state.effects.forEach(ef => {
+        if (ef.type === 'cannon' || ef.type === 'enemy_cannon') {
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(ef.sx * TILE_SIZE + 20, ef.sy * TILE_SIZE + 20);
+            ctx.lineTo(ef.tx * TILE_SIZE + 20, ef.ty * TILE_SIZE + 20);
+            ctx.stroke();
+        } else {
+            ctx.strokeStyle = '#fef08a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(ef.sx * TILE_SIZE + 20, ef.sy * TILE_SIZE + 20);
+            ctx.lineTo(ef.tx * TILE_SIZE + 20, ef.ty * TILE_SIZE + 20);
+            ctx.stroke();
+        }
+    });
+    state.effects = [];
 }
 
-// 初期化実行
 updateUI();
 draw();
-log('葵城へようこそ。50年間の防衛戦が始まります。');
+log('日ノ本国全図。これより五十年におよぶ天下不落の城郭創出を開始す。');
 </script>
 
 </body>
